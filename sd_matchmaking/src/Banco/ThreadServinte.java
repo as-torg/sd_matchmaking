@@ -1,7 +1,5 @@
 package Banco;
 
-import Banco.Banco;
-
 import java.io.*;
 import java.net.Socket;
 
@@ -65,9 +63,9 @@ public class ThreadServinte implements Runnable {
                         e.printStackTrace();
                     }
                     try {
-                        banco.fecharConta (Integer.parseInt(arg1));
-                    } catch (Banco.ContaInvalida contaInvalida) {
-                        contaInvalida.printStackTrace();
+                        banco.fecharConta(Integer.parseInt(arg1));
+                    } catch (ContaInvalida contaInvalida) {
+                            contaInvalida.printStackTrace();
                     }
                     try {
                         out.write("fecharConta");//resposta ao cliente
@@ -89,7 +87,7 @@ public class ThreadServinte implements Runnable {
                     try {
 
                         d=banco.consultar(i);
-                    } catch (Banco.ContaInvalida contaInvalida) {
+                    } catch (ContaInvalida contaInvalida) {
                         contaInvalida.printStackTrace();
                     }
                     try {
@@ -123,7 +121,7 @@ public class ThreadServinte implements Runnable {
                     d = 0;
                     try {
                         d = banco.consultarTotal(arglist);
-                    } catch (Banco.ContaInvalida contaInvalida) {
+                    } catch (ContaInvalida contaInvalida) {
                         contaInvalida.printStackTrace();
                     }
                     try {
@@ -150,9 +148,9 @@ public class ThreadServinte implements Runnable {
                     j = Integer.parseInt(arg2);
                     try {
                         banco.transferir(i,j,d);
-                    } catch (Banco.ContaInvalida contaInvalida) {
+                    } catch (ContaInvalida contaInvalida) {
                         contaInvalida.printStackTrace();
-                    } catch (Banco.SaldoInsuficiente saldoInsuficiente) {
+                    } catch (SaldoInsuficiente saldoInsuficiente) {
                         saldoInsuficiente.printStackTrace();
                     }
                     try {
@@ -181,9 +179,9 @@ public class ThreadServinte implements Runnable {
                     i =Integer.parseInt(arg1);
                     try {
                         banco.levantar(i, d);
-                    } catch (Banco.ContaInvalida contaInvalida) {
+                    } catch (ContaInvalida contaInvalida) {
                         contaInvalida.printStackTrace();
-                    } catch (Banco.SaldoInsuficiente saldoInsuficiente) {
+                    } catch (SaldoInsuficiente saldoInsuficiente) {
                         saldoInsuficiente.printStackTrace();
                     }
                     try {
@@ -210,7 +208,7 @@ public class ThreadServinte implements Runnable {
                     i = Integer.parseInt(arg1);
                     try {
                         banco.depositar(i,d);
-                    } catch (Banco.ContaInvalida contaInvalida) {
+                    } catch (ContaInvalida contaInvalida) {
                         contaInvalida.printStackTrace();
                     }
                     try {
