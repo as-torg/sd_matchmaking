@@ -61,6 +61,7 @@ public class LinkCliente {
         String arg1 = null, arg2 = null, arg3 = null, arg4 = null;
         int i = -1, j = -1; double d = -1;
         switch(resposta){
+            //Métodos disponíveis:
             case "criarConta":
                 //arg1 representa um booleano
                 arg1 = in.readLine();

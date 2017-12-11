@@ -18,6 +18,12 @@ public class ThreadServinte implements Runnable {
     BufferedWriter out;
     Socket socket;
     BancoContasJogadores banco;
+    /*
+    deve precisar também das queues e dos lobbies (subir do @BancoContasJogadores para @Servidor).
+    O servidor deve lançar uma thread quando o jogo estiver confirmado para correr,
+    que vai montar o lobby e gerir as invocações de threads (cada uma comunica com o seu cliente para escolher o herói)
+    Finalmente invoca o simulador
+     */
 
     public ThreadServinte(Socket s, BancoContasJogadores b) {
         this.socket = s;
