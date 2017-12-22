@@ -13,12 +13,7 @@ public class Lobby {
      */
     ArrayList <Conta> equipa1, equipa2;
     public Lobby(ArrayList<Conta>jogadores){
-        this.equipa1 = new ArrayList<Conta>();
-        this.equipa2 = new ArrayList<Conta>();
-        for (int i = 0; i<10;i=i+2) {
-            equipa1.add(jogadores.get(i));
-            equipa2.add(jogadores.get(i+1));
-        }
+
     }
     public Conta getJogador(int equipa, int indice){
         if (equipa == 1) return equipa1.get(indice);

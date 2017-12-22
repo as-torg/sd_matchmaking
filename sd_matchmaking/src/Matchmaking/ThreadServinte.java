@@ -2,6 +2,7 @@ package Matchmaking;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.HashMap;
 
 public class ThreadServinte implements Runnable {
     /*
@@ -16,27 +17,51 @@ public class ThreadServinte implements Runnable {
      */
     BufferedReader in;
     BufferedWriter out;
+    /*
+    BufferedReader fromR; //lê do reader
+    BufferedWriter toR, toW; //escreve para o reader ou writer
+    */
     Socket socket;
     BancoContasJogadores banco;
+    Conta contaJogador;
+    String username;
+    HashMap<String,Partida> partidas;
+
+    Thread r, w;
     /*
-    deve precisar também das queues e dos lobbies (subir do @BancoContasJogadores para @Servidor).
-    O servidor deve lançar uma thread quando o jogo estiver confirmado para correr,
-    que vai montar o lobby e gerir as invocações de threads (cada uma comunica com o seu cliente para escolher o herói)
-    Finalmente invoca o simulador
+    O Writer não vai ter lógica implementada, apenas envia mensagens ao cliente. Estas podem ser provenientes
+    de dois objetos
      */
 
-    public ThreadServinte(Socket s, BancoContasJogadores b) {
+    public ThreadServinte(Socket s, BancoContasJogadores b, HashMap <String, Partida> partidas) {
         this.socket = s;
         this.banco = b;
+        this.contaJogador = null;
+        this.partidas = partidas;
+        this.username = null;
+        /*
+        this.w = new ThreadServinteWriter();
+        this.fromR = w.getBuffer();
+        this.r = new ThreadServinteReader(toW);
+        this.toR = r.getBuffer();
+        */
+    }
+
+    public BufferedReader getIn() {
+        /*
+        Serve para colocar processos do lado do servidor a ativar procedimentos (cases no switch)
+        enquanto a ThreadServinte corre. O buffer vai ter mensagens provenientes da socket (cliente)
+        e do próprio servidor.
+         */
+        return in;
     }
 
     @Override
     public void run(){
-
         /*
-        Um comando a linha inteira (método agrumento1 argumento2 ...)
+        Um comando na linha inteira: (método agrumento1 argumento2 ...)
+                                        (linhainput arg1 arg2 ...)
          */
-
         try {
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
@@ -54,6 +79,10 @@ public class ThreadServinte implements Runnable {
         }
         //processar um comando
         while (linhainput != null) {
+            /*
+            fazer uma espécie de pipe vindo da thread superior Partida, que vai sendo testada
+            para verificar se tem que fazer alguma coisa extra
+             */
             switch (linhainput) {
                 case "criarConta":
                     try {
@@ -65,7 +94,8 @@ public class ThreadServinte implements Runnable {
                         e.printStackTrace();
                     }
                     //a conta foi criada e inserida com sucesso
-                    if (banco.criarConta(arg1, arg2)){
+                    //também anota a conta associada ao cliente desta thread
+                    if ((contaJogador = banco.criarConta(arg1, arg2)) != null){
                         try {
                             out.write(linhainput);
                             out.newLine();
@@ -77,9 +107,111 @@ public class ThreadServinte implements Runnable {
                         }
                     }
                     break;
+                case "login":
+                    try {
+                        //receber username
+                        arg1 = in.readLine();
+                        //receber password
+                        arg2 = in.readLine();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    //faz login e anota a conta associada ao cloente desta thread
+                    if((contaJogador = banco.login(arg1,arg2))!=null){
+                        username=contaJogador.getUsername();
+                        try {
+                            out.write(linhainput);
+                            out.newLine();
+                            out.write("sim");
+                            out.newLine();
+                            out.flush();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    };
+                    break;
+                case "logout":
+                    contaJogador.logoutConta();
+                    try {
+                        out.write(linhainput);
+                        out.newLine();
+                        out.write("sim");
+                        out.newLine();
+                        out.flush();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    break;
+                case "consultarRank":
+                    //Receber username. Pode consultar rank de outrs jogadores
+                    try {
+                        arg1 = in.readLine();
+                        i =  banco.consultarRank(arg1);
+                        out.write(linhainput);
+                        out.newLine();
+                        //responde com o rank do jogador procurado
+                        out.write(String.valueOf(i));
+                        out.newLine();
+                        out.flush();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    break;
+                case "consultarPontos":
+                    //Receber username. Pode consultar os pontos atuais de outrs jogadores
+                    try {
+                        arg1 = in.readLine();
+                        i =  banco.consultarPontos(arg1);
+                        out.write(linhainput);
+                        out.newLine();
+                        //responde com os pontos do jogador procurado
+                        out.write(String.valueOf(i));
+                        out.newLine();
+                        out.flush();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    break;
+                case "jogar":
+                    banco.jogar(username);
+                    //Talvez não possa esperar uma resposta porque o 10º jogador vai assumir controlo da partida.
+                    try {
+                        out.write(linhainput);
+                        out.newLine();
+                        //responde com uma confirmação
+                        out.write("");
+                        out.newLine();
+                        out.flush();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    break;
+                case "escolher":
+                    try {
+                        out.write(linhainput);
+                        out.newLine();
+                        out.flush();
+                        //responde com um champion
+                        arg1 = in.readLine();
+                        i=Integer.parseInt(arg1);
+                        partidas.get(contaJogador.getIdPartida()).escolher(username,i);
+
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
                 default:
                     break;
             }
+            try {
+                linhainput = in.readLine();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            /*
+            Fim do switch, deve ser feito aqui primeiro uma nova leitura de in ou verificar comandos superiores?
+             */
         }
+        //Fim do while()
     }
 }

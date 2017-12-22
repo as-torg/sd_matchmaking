@@ -20,7 +20,15 @@ public class Conta {
     private String password; //não pode ser alterada
     private String idPartida; //indica em que partida está. null se não está a jogar
     private boolean sessão; //indica se o dono da conta tem login feito. Necessário ser true para poder interagir.
+    //por defeito, a sessão é inciada durante a criação da conta.
     private ReentrantLock lock;
+
+    /*
+    Para poder implementar a comunicação de forma mais fácil, os buffers da socket aberta para o cliente
+    vão estar aqui guardados. Assim, quem estiver a lidar com informação do cliente poderá comunicar com ele.
+    Isto evita a criação de mais threads orientadas à comunicação, e reduz a complexidade, mantendo as comunicações
+    dentro do contexto.
+     */
 
     /*
     ######################################################
@@ -33,16 +41,15 @@ public class Conta {
         this.pontos = 0;
         this.idPartida = null;
         this.lock = new ReentrantLock();
-        this.sessão = false;
+        this.sessão = true;
     }
     /*
     ######################################################
     Métodos relevantes
     */
-    public void registaResultados(int pontos){
-        lock.lock();
+    public synchronized void registaResultados(int pontos){
         this.pontos+=pontos;
-        lock.unlock();
+
         if(this.pontos > 100) {
             this.rank++;
             this.pontos=this.pontos-100;
@@ -51,6 +58,7 @@ public class Conta {
             this.rank--;
             this.pontos = this.pontos+100;
         }
+        idPartida = null;
     }
     public boolean loginConta(String password){
         lock.lock();

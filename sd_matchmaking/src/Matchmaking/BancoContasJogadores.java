@@ -19,28 +19,26 @@ public class BancoContasJogadores implements InterfaceBancoContasJogadores{
     private ArrayList<Queue> queues;
     private ReentrantLock lock;
 
-    public BancoContasJogadores() {
+    public BancoContasJogadores(ArrayList<Queue>queues) {
         this.contas = new HashMap<String, Conta>();
-        this.queues = new ArrayList<Queue>();
+        this.queues = queues;
         /*
         Abre 10 queues, cada uma com um rank entre 0 e 10.
         Em queues[i] fica a queue de rank i (supota jogadores i e i+1)
          */
-        for(int i = 0; i < 10; i++){
-            queues.add(i, new Queue(i));
-        }
+
     }
-    public boolean criarConta(String username, String password){
+    public Conta criarConta(String username, String password){
         Conta c = new Conta (username, password);
         //testa o equals porque podem haver dois usernames diferentes com o mesmo hash (mesmo que improvável)
         if(!contas.get(username).equals(c)){
-            contas.put(username,c);
-            return true;
+            return contas.put(username,c);
         }
-        return false;
+        return null;
     }
-    public boolean login(String username, String password){
-        return contas.get(username).loginConta(password);
+    public Conta login(String username, String password){
+        if(contas.get(username).loginConta(password)) return contas.get(username);
+        return null;
     }
     public int consultarRank(String username){
         return contas.get(username).getRank();
@@ -58,42 +56,34 @@ public class BancoContasJogadores implements InterfaceBancoContasJogadores{
         Conta conta = contas.get(username);
         rankJogador = conta.getRank();
         //Pegar nas queues permitidas
+        //inserir o jogador nas queues
         Queue queueIndicada = queues.get(rankJogador);
+        numeroJogadoresIndicada = queueIndicada.adicionarJogador(conta);
         Queue queueAbaixo = null;
         if(rankJogador>0){
             queueAbaixo = queues.get(rankJogador-1);
+            numeroJogadoresAbaixo = queueAbaixo.adicionarJogador(conta);
         }
-        //inserir o jogador nas queues
-        numeroJogadoresIndicada = queueIndicada.adicionarJogador(username,rankJogador);
-        numeroJogadoresAbaixo = queueAbaixo.adicionarJogador(username, rankJogador);
-        //Se tiver enchido uma queue, remover as inscrições repetidas e começar o jogo
-        if (numeroJogadoresIndicada == 10){
-            ArrayList<Conta> jogadores = new ArrayList<Conta>();
-            /*
-            adicionar as contas dos jogadores numa fila pronta a jogar, ordenando por rank crescente
-            Mais tarde serão separados em equipas o mais equilibradas possível
-             */
-            for (int i = 0; i < 10; i++){
-                jogadores.add(contas.get(queueIndicada.getEquipas().get(i)));
-            }
-            Collections.sort(jogadores, new ComparatorConta());
-            //remover todos  os casos repetidos noutras queues, evita que joguem 2 partidas simultâneas
+        //Se estiver uma queue completa, remove repetidos nas outras e começa o jogo
+        if(numeroJogadoresIndicada==10 && rankJogador>0){
+            ArrayList<Conta> jogadores = queueIndicada.getJogadores();
             for (Conta c:jogadores){
                 for (Queue q:queues){
-                    q.removerJogador(c.getUsername());
+                    if (q.getRank()!=rankJogador) q.removerJogador(c.getUsername());
                 }
             }
-            //lançar uma partida abrindo o lobby para escolher champions
-            Lobby lobby = new Lobby(jogadores);
         }
+
+
+        //Se tiver enchido uma queue, remover as inscrições repetidas e começar o jogo
+
     }
     public void sairQueue(String username){
-        int rankJogador = contas.get(username).getRank();
         /*
         Um jogador de rank x pode estar nas filas x e x-1.
         Exceção para rank 0, que só podem estar na fila 0.
          */
-
+        int rankJogador = contas.get(username).getRank();
         queues.get(rankJogador).removerJogador(username);
         if(rankJogador>0) queues.get(rankJogador-1).removerJogador(username);
     }

@@ -5,7 +5,7 @@ import Banco.Banco;
 import java.io.IOException;
 
 public class MainServidor {
-    public static void main(String[] s) throws Banco.ContaInvalida, IOException {
+    public static void main(String[] s) throws ContaInvalida, IOException {
         Banco b = new Banco(0);
         Servidor sv = new Servidor( b);
         sv.servir();
