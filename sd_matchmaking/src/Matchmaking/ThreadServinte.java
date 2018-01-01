@@ -2,7 +2,10 @@ package Matchmaking;
 
 import java.io.*;
 import java.net.Socket;
+import java.nio.channels.AsynchronousFileChannel;
 import java.util.HashMap;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class ThreadServinte implements Runnable {
     /*
@@ -11,49 +14,41 @@ public class ThreadServinte implements Runnable {
     Quando recebe um comando do LinkCliente, vai identificar e tomar as ações certas (switch).
     Os métodos operam sobre:
     -o BancoContas (para coisas sobre as contas dos jogadores)
-    -uma Queue (para colocar o jogador com outros)
-    -um Lobby (escolha dos heróis, avisar dos disponíveis e receber a escolha)
+    -um GestorQueues (para colocar o jogador com outros)
+    -uma Partida (indiretamente por mensagens: escolha dos heróis, avisar dos disponíveis e receber a escolha)
 
      */
-    BufferedReader in;
-    BufferedWriter out;
     /*
     BufferedReader fromR; //lê do reader
     BufferedWriter toR, toW; //escreve para o reader ou writer
     */
+    BufferedReader in;
+    BufferedWriter out;
     Socket socket;
     BancoContasJogadores banco;
     Conta contaJogador;
     String username;
-    HashMap<String,Partida> partidas;
+    ArrayBlockingQueue mensagens;
+    ReentrantLock lock;
 
-    Thread r, w;
     /*
     O Writer não vai ter lógica implementada, apenas envia mensagens ao cliente. Estas podem ser provenientes
     de dois objetos
      */
 
-    public ThreadServinte(Socket s, BancoContasJogadores b, HashMap <String, Partida> partidas) {
+    public ThreadServinte(Socket s, BancoContasJogadores b, GestorQueues queues, ArrayBlockingQueue mensagens) {
         this.socket = s;
         this.banco = b;
         this.contaJogador = null;
-        this.partidas = partidas;
         this.username = null;
+        this.mensagens = mensagens; //mensagens a serem lidas pelo GestorQueues (pedidos para jogar)
+        this.lock = new ReentrantLock();
         /*
         this.w = new ThreadServinteWriter();
         this.fromR = w.getBuffer();
         this.r = new ThreadServinteReader(toW);
         this.toR = r.getBuffer();
         */
-    }
-
-    public BufferedReader getIn() {
-        /*
-        Serve para colocar processos do lado do servidor a ativar procedimentos (cases no switch)
-        enquanto a ThreadServinte corre. O buffer vai ter mensagens provenientes da socket (cliente)
-        e do próprio servidor.
-         */
-        return in;
     }
 
     @Override
@@ -79,10 +74,6 @@ public class ThreadServinte implements Runnable {
         }
         //processar um comando
         while (linhainput != null) {
-            /*
-            fazer uma espécie de pipe vindo da thread superior Partida, que vai sendo testada
-            para verificar se tem que fazer alguma coisa extra
-             */
             switch (linhainput) {
                 case "criarConta":
                     try {
@@ -132,6 +123,8 @@ public class ThreadServinte implements Runnable {
                     break;
                 case "logout":
                     contaJogador.logoutConta();
+
+
                     try {
                         out.write(linhainput);
                         out.newLine();
@@ -173,7 +166,29 @@ public class ThreadServinte implements Runnable {
                     }
                     break;
                 case "jogar":
-                    banco.jogar(username);
+                    try {
+                        mensagens.put(username);//envia pedido para jogar ao GestorQueues
+                        /*
+                        Tentativa de colocar um cancelamento à procura de um jogo, possível melhoria
+                        while(!(arg2 = contaJogador.readToCliente()).equals("escolher")){
+
+                            if (arg1.equals("cancelar")){
+                                ReentrantLock lock = new ReentrantLock();
+                                lock.lock();
+                                mensagens.put(arg1);
+                                mensagens.put(username);
+                            }
+                        }
+                        */
+                        //recebe um alerta de quando é para escolher, partida está pronta
+                        contaJogador.readToCliente();
+                        //avisa o jogador
+                        out.write("começar");out.newLine();out.write("escolher");out.newLine();out.flush();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                     //Talvez não possa esperar uma resposta porque o 10º jogador vai assumir controlo da partida.
                     try {
                         out.write(linhainput);
@@ -188,18 +203,51 @@ public class ThreadServinte implements Runnable {
                     break;
                 case "escolher":
                     try {
-                        out.write(linhainput);
-                        out.newLine();
-                        out.flush();
-                        //responde com um champion
+                        //responde com um champion. tem que levar locks para que as várias mensagens cheguem juntas
                         arg1 = in.readLine();
                         i=Integer.parseInt(arg1);
-                        partidas.get(contaJogador.getIdPartida()).escolher(username,i);
-
+                        //envia o pedido à partida
+                        lock.lock();
+                        contaJogador.writeFromCliente(username);//username do jogador
+                        contaJogador.writeFromCliente(String.valueOf(contaJogador.getNumeroJogador())); //número do jogador
+                        contaJogador.writeFromCliente(in.readLine());//escolha do jogador
+                        lock.unlock();
+                        //recebe uma resposta, se tiver que escolher outro avisa o jogador
+                        String resposta = contaJogador.readToCliente();
+                        /*
+                        * Como em todos os casos seria para enviar a resposta ao cliente, nem passa pelo switch
+                        */
+                        out.write("resposta");
+                            out.newLine();
+                            out.flush();
+                        /*
+                        switch (resposta){
+                            case"escolhido":
+                                out.write("escolhido");
+                                out.newLine();
+                                out.flush();
+                                break;
+                            case "outro":
+                                out.write("outro");
+                                out.newLine();
+                                out.flush();
+                                break;
+                            case"ganhou":
+                                out.write("ganhou");
+                                out.newLine();
+                                out.flush();
+                                break;
+                            case"perdeu":
+                                out.write("perdeu");
+                                out.newLine();
+                                out.flush();
+                                break;
+                        }
+                        */
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-
+                    break;
                 default:
                     break;
             }

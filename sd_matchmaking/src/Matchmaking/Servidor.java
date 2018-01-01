@@ -1,12 +1,13 @@
 package Matchmaking;
 
-import Banco.ThreadServinte;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+
 
 public class Servidor {
 
@@ -17,25 +18,27 @@ public class Servidor {
      */
     private ServerSocket serverSocket;
     private BancoContasJogadores banco;
-    private ArrayList <Queue> queues;
-    protected HashMap<String,Partida> partidas;
+    private GestorQueues queues;
+    private ArrayBlockingQueue mensagens;
 
     public Servidor (){
-        this.queues = new ArrayList<Queue>();
-        for(int i = 0; i < 10; i++){
-            queues.add(i, new Queue(i));
-        }
-        this.banco = new BancoContasJogadores(queues);
-        this.partidas = new HashMap<String, Partida>();
+        this.banco = new BancoContasJogadores();
+        this.mensagens = new ArrayBlockingQueue(20);//capacidade do buffer de pedidos
+        this.queues = new GestorQueues(banco, mensagens);
     }
     public void servir() throws IOException {
+        Thread gestor = new Thread(queues);
+        gestor.run();
+        System.out.println("Queues abertas\n");
         serverSocket = new ServerSocket(12345);
-        System.out.println("A receber pedidos");
+        System.out.println("A receber pedidos\n");
         while (true){
             Socket clientSocket;
             clientSocket = serverSocket.accept();
-            System.out.println("Um pedido foi recebido");
-            Matchmaking.ThreadServinte s = new Matchmaking.ThreadServinte(clientSocket, this.banco, partidas );
+            System.out.println("Um pedido foi recebido\n");
+            Matchmaking.ThreadServinte s = new Matchmaking.ThreadServinte(clientSocket, banco, queues, mensagens );
+            Thread t = new Thread(s);
+            t.start();
         }
     }
 }

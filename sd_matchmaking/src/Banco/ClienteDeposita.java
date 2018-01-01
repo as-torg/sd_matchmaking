@@ -1,8 +1,7 @@
 package Banco;
 
-import Banco.Banco;
-
 public class ClienteDeposita implements Runnable{
+
     private Banco b;
 
     public ClienteDeposita(Banco b){

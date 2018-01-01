@@ -1,7 +1,6 @@
 package Banco;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class Banco implements InterfaceBanco {
@@ -18,19 +17,19 @@ public class Banco implements InterfaceBanco {
         }
     }
 
-    public double consultar(int n)throws ContaInvalida {
+    public double consultar(int n)throws Banco.ContaInvalidaException {
         return this.contas.get(n).getSaldo();
     }
 
-    public void depositar(int n, double d)throws ContaInvalida {
+    public void depositar(int n, double d)throws Banco.ContaInvalidaException {
         this.contas.get(n).addSaldo(d);
     }
 
-    public void levantar(int n, double d)throws ContaInvalida, SaldoInsuficiente {
+    public void levantar(int n, double d)throws Banco.ContaInvalidaException, SaldoInsuficiente {
         if(this.contas.get(n).getSaldo()>=d) this.contas.get(n).tiraSaldo(d);
     }
 
-    public void transferir(int n1, int n2, double d) throws ContaInvalida, SaldoInsuficiente {
+    public void transferir(int n1, int n2, double d) throws Banco.ContaInvalidaException, SaldoInsuficiente {
         if(this.contas.get(n1).getSaldo()>=d){
             this.contas.get(n1).tiraSaldo(d);
             this.contas.get(n2).addSaldo(d);
@@ -43,7 +42,7 @@ public class Banco implements InterfaceBanco {
         return contas.size()-1;
     }
 
-    public double fecharConta(int id) throws ContaInvalida {//faltam muitas coisas
+    public double fecharConta(int id) throws Banco.ContaInvalidaException {//faltam muitas coisas
         double saldo = 0;
         lock.lock();
         saldo = this.contas.get(id).getSaldo();
@@ -53,7 +52,7 @@ public class Banco implements InterfaceBanco {
         return saldo;
     }
 
-    public double consultarTotal(int contas[]) throws ContaInvalida {//é preciso dar lock a todas as contas antes de consultar o total, para que a "imagem" não mude durante a execução
+    public double consultarTotal(int contas[]) throws Banco.ContaInvalidaException {//é preciso dar lock a todas as contas antes de consultar o total, para que a "imagem" não mude durante a execução
         lock.lock();
         double saldo=0;
         //é também usado um lockBanco para evitar que se mexa no arraylist
