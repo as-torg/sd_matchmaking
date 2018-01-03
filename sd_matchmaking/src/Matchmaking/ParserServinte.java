@@ -9,6 +9,9 @@ public class ParserServinte implements Runnable {
     /*
     Tal como no parser do cliente, esta classe serve para fazer push de notificações de forma assíncrona.
     Esta thread vai estar permanentemente a interpretar mensagens vindas do sistema tais como "escolher", ou "timeout"
+    e a encaminhar para o parser do cliente.
+    Temos uma situação em que duas threads escrevem no mesmo socket (esta e a ThreadServinte), só que esta trata das
+    mensagens assíncronas e a ThreadServinte trata das síncronas.
     Evita-se assim que a ThreadServinte fique impossibilitada de receber comandos por estar bloqueada a esperar notificações
     */
 

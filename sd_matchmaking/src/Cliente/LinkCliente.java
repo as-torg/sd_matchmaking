@@ -46,7 +46,7 @@ public class LinkCliente {
         comandoInvocado - "login"
 
          */
-        System.out.println("Bem vindo. Faça login para começar...\n");
+        System.out.println("Bem vindo. Faça login para começar...");
         while (!sair){
             comandoTotal = stdin.readLine();
             //envia o comando ao servidor, partido por palavras e separados com \n
@@ -58,7 +58,7 @@ public class LinkCliente {
                 break;
             }
             out.flush();
-            System.out.println("Comando enviado: "+comandoTotal+"\nA aguardar resposta...\n");
+            System.out.println("Comando enviado: "+comandoTotal+"\nA aguardar resposta...");
             /*
             Por simplicidade de código, todos os métodos devem ter uma resposta que vai ser interpretada no switch.
             A resposta pode ser apenas uma confirmação de que métodos void funcionaram normalmente

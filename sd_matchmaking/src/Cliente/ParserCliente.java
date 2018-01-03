@@ -48,29 +48,29 @@ public class ParserCliente implements Runnable {
                     case "criarConta":
                         //arg1 representa um booleano
                         arg1 = in.readLine();
-                        if (arg1.equals("sim")) System.out.println("Conta criada com sucesso\n");
+                        if (arg1.equals("sim")) System.out.println("Conta criada com sucesso");
                         else{
                             //lê o username
                             arg2 = in.readLine();
-                            System.out.println("Já existe um jogador com o nome "+arg2 +"\n");
+                            System.out.println("Já existe um jogador com o nome "+arg2 +"");
                         }
                         break;
                     case "login":
                         arg1 = in.readLine();
                         if (arg1.equals("sim")) System.out.println("Login com sucesso\nIntroduza um comando...");
-                        else System.out.println("Login falhou, tente novamente\n");
+                        else System.out.println("Login falhou, tente novamente");
                         break;
                     case "consultarRank":
                         arg1 = in.readLine();
                         i = Integer.parseInt(arg1);
-                        if(i>=0)System.out.println("O jogador tem rank "+i+"\n");
-                        else System.out.println("O jogador não existe\n");
+                        if(i>=0)System.out.println("O jogador tem rank "+i+"");
+                        else System.out.println("O jogador não existe");
                         break;
                     case "consultarPontos":
                         arg1 = in.readLine();
                         i = Integer.parseInt(arg1);
-                        if(i>=-100)System.out.println("O jogador tem "+i+" pontos\n");
-                        else System.out.println("O jogador não existe\n");
+                        if(i>=-100)System.out.println("O jogador tem "+i+" pontos");
+                        else System.out.println("O jogador não existe");
                         break;
                     case "logout":
                           /*não ocorre o caso de falhar o fecho de sessão, porque se não estiver aberta
@@ -79,73 +79,73 @@ public class ParserCliente implements Runnable {
                         socket.shutdownInput();
                         socket.close();
                         sair = true;
-                        System.out.println("Sessão terminada\n");
+                        System.out.println("Sessão terminada");
                         break;
                     case "jogar":
-                        System.out.println("Foi colocado em queue, aguarde por mais jogadores...\n");
+                        System.out.println("Foi colocado em queue, aguarde por mais jogadores...");
                         break;
                     case "sairQueue":
                         arg1 = in.readLine();
-                        if (arg1.equals("sim")) System.out.println("Procura de equipa cancelada\n");
-                        else System.out.println("Não pode cancelar sem estar na queue\n");
+                        if (arg1.equals("sim")) System.out.println("Procura de equipa cancelada");
+                        else System.out.println("Não pode cancelar sem estar na queue");
                         break;
                     case "escolher":
                         //int escolha = ThreadLocalRandom.current().nextInt(0, 30 + 1);
-                        System.out.println("Jogo encontrado. Escolha um champion indicando o número entre 0 e 30\n");
+                        System.out.println("Jogo encontrado. Escolha um champion indicando o número entre 0 e 30");
                         break;
                     case "outro":
-                        System.out.println("Esse já foi escolhido, escolha outro\n"); //indica outro número
+                        System.out.println("Esse já foi escolhido, escolha outro"); //indica outro número
                         break;
                     case "escolhido":
-                        System.out.println("Escolhido com sucesso\n");
+                        System.out.println("Escolhido com sucesso");
                         /*a Partida está a esperar que o alarme toque e vai verificar se todos escolheram.*/
                         break;
                     case "ingame":
-                        System.out.println("Já está num jogo, não pode participar noutro até o jogo atual terminar\n");
+                        System.out.println("Já está num jogo, não pode participar noutro até o jogo atual terminar");
                         break;
                     case "inqueue":
-                        System.out.println("Já está em queue, aguarde enquanto procuramos por mais jogadores\n");
+                        System.out.println("Já está em queue, aguarde enquanto procuramos por mais jogadores");
                         break;
                     case "ganhou":
-                        System.out.println("Ganhou a partida! PARABÉNS!\n");
+                        System.out.println("Ganhou a partida! PARABÉNS!");
                         break;
                     case "perdeu":
-                        System.out.println("Perdeu a partida!\n");
+                        System.out.println("Perdeu a partida!");
                         break;
                     case "timeout":
-                        System.out.println("Não escolheu nenhum champion. Foram-lhe retirados 20 pontos\n");
+                        System.out.println("Não escolheu nenhum champion. Foram-lhe retirados 20 pontos");
                         break;
                     case "nosessao":
-                        System.out.println("Tem que fazer login\n");
+                        System.out.println("Tem que fazer login");
                         break;
                     case "updateEquipa":
                         /*for(i=0;i<5;i++){
                             championsEquipa[i]=Integer.parseInt(in.readLine());
                         }
                         */
-                        System.out.println("---Champion Select---\n");
-                        System.out.println("   Jogador 1: "+Integer.parseInt(in.readLine())+"\n");
-                        System.out.println("   Jogador 2: "+Integer.parseInt(in.readLine())+"\n");
-                        System.out.println("   Jogador 3: "+Integer.parseInt(in.readLine())+"\n");
-                        System.out.println("   Jogador 4: "+Integer.parseInt(in.readLine())+"\n");
-                        System.out.println("   Jogador 5: "+Integer.parseInt(in.readLine())+"\n");
-                        System.out.println("---------------------\n\n");
+                        System.out.println("---Champion Select---");
+                        System.out.println("   Jogador 1: "+Integer.parseInt(in.readLine()));
+                        System.out.println("   Jogador 2: "+Integer.parseInt(in.readLine()));
+                        System.out.println("   Jogador 3: "+Integer.parseInt(in.readLine()));
+                        System.out.println("   Jogador 4: "+Integer.parseInt(in.readLine()));
+                        System.out.println("   Jogador 5: "+Integer.parseInt(in.readLine()));
+                        System.out.println("---------------------\n");
                         break;
                     case "start":
-                        System.out.println("---Champion Select---\n");
-                        System.out.println("Equipa 1: escolhas\n");
-                        System.out.println("1:   "+in.readLine()+": "+Integer.parseInt(in.readLine())+"\n");
-                        System.out.println("2:   "+in.readLine()+": "+Integer.parseInt(in.readLine())+"\n");
-                        System.out.println("3:   "+in.readLine()+": "+Integer.parseInt(in.readLine())+"\n");
-                        System.out.println("4:   "+in.readLine()+": "+Integer.parseInt(in.readLine())+"\n");
-                        System.out.println("5:   "+in.readLine()+": "+Integer.parseInt(in.readLine())+"\n");
-                        System.out.println("Equipa 2: escolhas\n");
-                        System.out.println("1:   "+in.readLine()+": "+Integer.parseInt(in.readLine())+"\n");
-                        System.out.println("2:   "+in.readLine()+": "+Integer.parseInt(in.readLine())+"\n");
-                        System.out.println("3:   "+in.readLine()+": "+Integer.parseInt(in.readLine())+"\n");
-                        System.out.println("4:   "+in.readLine()+": "+Integer.parseInt(in.readLine())+"\n");
-                        System.out.println("5:   "+in.readLine()+": "+Integer.parseInt(in.readLine())+"\n");
-                        System.out.println("---------------------\n\n");
+                        System.out.println("---Champion Select---");
+                        System.out.println("Equipa 1: escolhas");
+                        System.out.println("1:   "+in.readLine()+": "+Integer.parseInt(in.readLine()));
+                        System.out.println("2:   "+in.readLine()+": "+Integer.parseInt(in.readLine()));
+                        System.out.println("3:   "+in.readLine()+": "+Integer.parseInt(in.readLine()));
+                        System.out.println("4:   "+in.readLine()+": "+Integer.parseInt(in.readLine()));
+                        System.out.println("5:   "+in.readLine()+": "+Integer.parseInt(in.readLine()));
+                        System.out.println("Equipa 2: escolhas");
+                        System.out.println("1:   "+in.readLine()+": "+Integer.parseInt(in.readLine()));
+                        System.out.println("2:   "+in.readLine()+": "+Integer.parseInt(in.readLine()));
+                        System.out.println("3:   "+in.readLine()+": "+Integer.parseInt(in.readLine()));
+                        System.out.println("4:   "+in.readLine()+": "+Integer.parseInt(in.readLine()));
+                        System.out.println("5:   "+in.readLine()+": "+Integer.parseInt(in.readLine()));
+                        System.out.println("---------------------\n");
 
                         break;
                     default:

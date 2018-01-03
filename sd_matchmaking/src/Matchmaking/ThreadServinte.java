@@ -72,55 +72,39 @@ public class ThreadServinte implements Runnable {
         boolean login = false;
         while(!login){
             //o comando tem que ser "login"
-            while(!linhainput.equals("login")) {
-                try {
-                    out.write("login\nfalhou\n");
-                    out.flush();
-                    linhainput=in.readLine();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            //tenta fazer login
-            try {
-                //receber username
-                arg1 = in.readLine();
-                //receber password
-                arg2 = in.readLine();
-                //faz login e anota a conta associada ao cloente desta thread
-                if((contaJogador = banco.login(arg1,arg2))!=null){
-                    username=contaJogador.getUsername();
-                    login = true;
+            while(!login) {
+                if(linhainput.equals("login")){
+                    //tenta fazer login
                     try {
-                        out.write("login\nsim\n");
-                        out.flush();
+                        //receber username
+                        arg1 = in.readLine();
+                        //receber password
+                        arg2 = in.readLine();
+                        //faz login e anota a conta associada ao cloente desta thread
+                        if((contaJogador = banco.login(arg1,arg2))!=null){
+                            username=contaJogador.getUsername();
+                            login = true;
+                            try {
+                                out.write("login\nsim\n");
+                                out.flush();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        else{//se o login falha
+                            try {
+                                out.write("login\nfalhou\n");
+                                out.flush();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
+                    break;
                 }
-                else{//se o login falha
-                    try {
-                        out.write("login\nfalhou\n");
-                        out.flush();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        /*
-        ######################################################
-        Login feito com sucesso
-        ######################################################
-         */
-
-        //processar um comando
-        while (linhainput != null) {
-            if((arg1 = contaJogador.readToCliente())!=null) linhainput = arg1;
-            switch (linhainput) {
-                case "criarConta":
+                else if (linhainput.equals("criarConta")){
                     try {
                         //receber username
                         arg1 = in.readLine();
@@ -133,6 +117,7 @@ public class ThreadServinte implements Runnable {
                     //também anota a conta associada ao cliente desta thread
                     if ((contaJogador = banco.criarConta(arg1, arg2)) != null){
                         try {
+                            login = true;
                             out.write(linhainput);
                             out.newLine();
                             out.write("sim");
@@ -156,6 +141,27 @@ public class ThreadServinte implements Runnable {
                         }
                     }
                     break;
+                }
+                try {
+                    out.write("nosessao\n");
+                    out.flush();
+                    linhainput=in.readLine();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+        }
+        /*
+        ######################################################
+        Login feito com sucesso
+        ######################################################
+         */
+
+        //processar um comando
+        while (linhainput != null) {
+            if((arg1 = contaJogador.readToCliente())!=null) linhainput = arg1;
+            switch (linhainput) {
                 case "logout":
                     contaJogador.logoutConta();
                     try {

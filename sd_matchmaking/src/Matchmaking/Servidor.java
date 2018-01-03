@@ -20,13 +20,13 @@ public class Servidor {
         GestorQueues queues = new GestorQueues(banco, mensagens);
         Thread gestor = new Thread(queues);
         gestor.start();
-        System.out.println("Queues abertas\n");
+        System.out.println("Queues abertas");
         ServerSocket serverSocket = new ServerSocket(12345);
-        System.out.println("A receber pedidos\n");
+        System.out.println("A receber pedidos");
         while (true){
             Socket clientSocket;
             clientSocket = serverSocket.accept();
-            System.out.println("Um pedido foi recebido\n");
+            System.out.println("Um pedido foi recebido");
             Matchmaking.ThreadServinte s = new Matchmaking.ThreadServinte(clientSocket, banco, queues, mensagens );
             Thread t = new Thread(s);
             t.start();
