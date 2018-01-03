@@ -2,8 +2,7 @@ package Matchmaking;
 
 import java.io.*;
 import java.net.Socket;
-import java.nio.channels.AsynchronousFileChannel;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -22,14 +21,14 @@ public class ThreadServinte implements Runnable {
     BufferedReader fromR; //lê do reader
     BufferedWriter toR, toW; //escreve para o reader ou writer
     */
-    BufferedReader in;
-    BufferedWriter out;
-    Socket socket;
-    BancoContasJogadores banco;
-    Conta contaJogador;
-    String username;
-    ArrayBlockingQueue mensagens;
-    ReentrantLock lock;
+    private BufferedReader in;
+    private BufferedWriter out;
+    private Socket socket;
+    private BancoContasJogadores banco;
+    private Conta contaJogador;
+    private String username;
+    private ArrayBlockingQueue mensagens;
+    private ReentrantLock lock;
 
     /*
     O Writer não vai ter lógica implementada, apenas envia mensagens ao cliente. Estas podem ser provenientes
@@ -43,12 +42,7 @@ public class ThreadServinte implements Runnable {
         this.username = null;
         this.mensagens = mensagens; //mensagens a serem lidas pelo GestorQueues (pedidos para jogar)
         this.lock = new ReentrantLock();
-        /*
-        this.w = new ThreadServinteWriter();
-        this.fromR = w.getBuffer();
-        this.r = new ThreadServinteReader(toW);
-        this.toR = r.getBuffer();
-        */
+
     }
 
     @Override
@@ -63,17 +57,68 @@ public class ThreadServinte implements Runnable {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        String linhainput = null, arg1 = null, arg2 = null, arg3 = null;
+        String linhainput = "false", arg1 = null, arg2 = null;
         int i = -1, j = -1;
-        double d = -1;
         try {
             //receber o método
             linhainput = in.readLine();
         } catch (IOException e) {
             e.printStackTrace();
         }
+        /*
+        antes de fazer qualquer coisa tem que ser feito login numa conta
+        o pedido de login chega com o formato: "login'\n'username'\n'password'\n'"
+         */
+        boolean login = false;
+        while(!login){
+            //o comando tem que ser "login"
+            while(!linhainput.equals("login")) {
+                try {
+                    out.write("login\nfalhou\n");
+                    out.flush();
+                    linhainput=in.readLine();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            //tenta fazer login
+            try {
+                //receber username
+                arg1 = in.readLine();
+                //receber password
+                arg2 = in.readLine();
+                //faz login e anota a conta associada ao cloente desta thread
+                if((contaJogador = banco.login(arg1,arg2))!=null){
+                    username=contaJogador.getUsername();
+                    login = true;
+                    try {
+                        out.write("login\nsim\n");
+                        out.flush();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                else{//se o login falha
+                    try {
+                        out.write("login\nfalhou\n");
+                        out.flush();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        /*
+        ######################################################
+        Login feito com sucesso
+        ######################################################
+         */
+
         //processar um comando
         while (linhainput != null) {
+            if((arg1 = contaJogador.readToCliente())!=null) linhainput = arg1;
             switch (linhainput) {
                 case "criarConta":
                     try {
@@ -97,38 +142,24 @@ public class ThreadServinte implements Runnable {
                             e.printStackTrace();
                         }
                     }
-                    break;
-                case "login":
-                    try {
-                        //receber username
-                        arg1 = in.readLine();
-                        //receber password
-                        arg2 = in.readLine();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    //faz login e anota a conta associada ao cloente desta thread
-                    if((contaJogador = banco.login(arg1,arg2))!=null){
-                        username=contaJogador.getUsername();
+                    //o username já existe
+                    else{
                         try {
                             out.write(linhainput);
                             out.newLine();
-                            out.write("sim");
+                            out.write("nao\n");
+                            out.write(arg1);
                             out.newLine();
                             out.flush();
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
-                    };
+                    }
                     break;
                 case "logout":
                     contaJogador.logoutConta();
-
-
                     try {
                         out.write(linhainput);
-                        out.newLine();
-                        out.write("sim");
                         out.newLine();
                         out.flush();
                     } catch (IOException e) {
@@ -153,7 +184,7 @@ public class ThreadServinte implements Runnable {
                 case "consultarPontos":
                     //Receber username. Pode consultar os pontos atuais de outrs jogadores
                     try {
-                        arg1 = in.readLine();
+                        arg1 = in.readLine();//username
                         i =  banco.consultarPontos(arg1);
                         out.write(linhainput);
                         out.newLine();
@@ -167,38 +198,22 @@ public class ThreadServinte implements Runnable {
                     break;
                 case "jogar":
                     try {
-                        mensagens.put(username);//envia pedido para jogar ao GestorQueues
-                        /*
-                        Tentativa de colocar um cancelamento à procura de um jogo, possível melhoria
-                        while(!(arg2 = contaJogador.readToCliente()).equals("escolher")){
 
-                            if (arg1.equals("cancelar")){
-                                ReentrantLock lock = new ReentrantLock();
-                                lock.lock();
-                                mensagens.put(arg1);
-                                mensagens.put(username);
-                            }
+                        //se o jogador já estiver na queue
+                        if(contaJogador.isInQueue()){
+                            out.write("inqueue\n");out.flush();
                         }
-                        */
-                        //recebe um alerta de quando é para escolher, partida está pronta
-                        contaJogador.readToCliente();
-                        //avisa o jogador
-                        out.write("começar");out.newLine();out.write("escolher");out.newLine();out.flush();
+                        //ou numa partida não pode procurar um jogo novo
+                        if(contaJogador.getIdPartida()!=-1){
+                            out.write("ingame\n");out.flush();
+                        }
+                        //envia pedido para jogar ao GestorQueues
+                        mensagens.put(username);
+                        out.write("jogar\n");out.flush();
                     } catch (InterruptedException e) {
                         e.printStackTrace();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    //Talvez não possa esperar uma resposta porque o 10º jogador vai assumir controlo da partida.
-                    try {
-                        out.write(linhainput);
-                        out.newLine();
-                        //responde com uma confirmação
-                        out.write("");
-                        out.newLine();
-                        out.flush();
-                    } catch (IOException e) {
-                        e.printStackTrace();
+                    } catch (IOException io) {
+                        io.printStackTrace();
                     }
                     break;
                 case "escolher":
@@ -206,7 +221,17 @@ public class ThreadServinte implements Runnable {
                         //responde com um champion. tem que levar locks para que as várias mensagens cheguem juntas
                         arg1 = in.readLine();
                         i=Integer.parseInt(arg1);
-                        //envia o pedido à partida
+                        //envia o pedido à partida e atualiza o cliente com as escolhas atuais
+                        contaJogador.escolherChampion(i);
+                        mensagens.put("updateEquipa"+(contaJogador.getNumeroEquipa()+1)); //get dá 0 ou 1
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
+                    /*//implementação antiga, problemas por causa do sincronismo
+                    try {
                         lock.lock();
                         contaJogador.writeFromCliente(username);//username do jogador
                         contaJogador.writeFromCliente(String.valueOf(contaJogador.getNumeroJogador())); //número do jogador
@@ -216,7 +241,7 @@ public class ThreadServinte implements Runnable {
                         String resposta = contaJogador.readToCliente();
                         /*
                         * Como em todos os casos seria para enviar a resposta ao cliente, nem passa pelo switch
-                        */
+                        *
                         out.write("resposta");
                             out.newLine();
                             out.flush();
@@ -243,11 +268,18 @@ public class ThreadServinte implements Runnable {
                                 out.flush();
                                 break;
                         }
-                        */
+                        *
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }*/
+                    break;
+                case "setRank": //isto só existe para abrir contas logo com ranks diferentes nos testes pontuais
+                    //"setRank 4"
+                    try {
+                        contaJogador.setRank(Integer.valueOf(in.readLine()));
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-                    break;
                 default:
                     break;
             }

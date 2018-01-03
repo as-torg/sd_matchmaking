@@ -4,7 +4,6 @@ package Matchmaking;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 
 public class GestorQueues implements Runnable {
 
@@ -16,7 +15,7 @@ public class GestorQueues implements Runnable {
     public GestorQueues(BancoContasJogadores b, ArrayBlockingQueue mensagens){
         this.mensagens = mensagens;
         this.banco = b;
-        this.queues = new ArrayList<Queue>();
+        this.queues = new ArrayList<>();
         for(int i = 0; i < 10; i++){
             queues.add(i, new Queue(i));
         }
@@ -27,14 +26,17 @@ public class GestorQueues implements Runnable {
     @Override
     public void run() {
         String username = null;
-
         while(true){
             /*
             Recebe um pedido da blocking queue (username de alguém que quer jogar)
             O processo fica bloqeado até que haja um pedido para jogar
             */
-            username = (String)mensagens.poll();
-            //if(username.contains("cancelar "))
+            try {
+                username = (String)mensagens.take();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            //if(username.contains("cancelar"))
             //carrega e prepara dados necessários
             Conta conta = banco.getConta(username);
             if(conta.getIdPartida()==0){
@@ -48,7 +50,7 @@ public class GestorQueues implements Runnable {
             conta.setInQueue(true);
             int rankJogador = conta.getRank();
             Queue queueIndicada = queues.get(rankJogador);
-            Queue queueAbaixo = null;
+            Queue queueAbaixo;
             //coloca nas queues. queue indicada ainda tem vagas, porque ao começar é esvaziada
             queueIndicada.jogar(conta);
             //se ficar cheia, prepara uma partida
@@ -70,8 +72,8 @@ public class GestorQueues implements Runnable {
                  */
                 Collections.sort(jogadores, new ComparatorConta());
                 ArrayList<Conta> equipa1, equipa2;
-                equipa1 = new ArrayList<Conta>();
-                equipa2 = new ArrayList<Conta>();
+                equipa1 = new ArrayList<>();
+                equipa2 = new ArrayList<>();
                 for (int i = 0; i<10;i=i+2) {
                     equipa1.add(jogadores.get(i));
                     equipa2.add(jogadores.get(i+1));
@@ -100,8 +102,8 @@ public class GestorQueues implements Runnable {
                     queueAbaixo.reset();
                     Collections.sort(jogadores, new ComparatorConta());
                     ArrayList<Conta> equipa1, equipa2;
-                    equipa1 = new ArrayList<Conta>();
-                    equipa2 = new ArrayList<Conta>();
+                    equipa1 = new ArrayList<>();
+                    equipa2 = new ArrayList<>();
                     for (int i = 0; i<10;i=i+2) {
                         equipa1.add(jogadores.get(i));
                         equipa2.add(jogadores.get(i+1));

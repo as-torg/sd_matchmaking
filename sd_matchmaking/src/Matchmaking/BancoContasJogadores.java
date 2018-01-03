@@ -35,10 +35,12 @@ public class BancoContasJogadores {
         return null;
     }
     public int consultarRank(String username){
-        return contas.get(username).getRank();
+        if(contas.get(username)!=null)return contas.get(username).getRank();
+        else return -200;
     }
     public int consultarPontos(String username){
-        return contas.get(username).getPontos();
+        if(contas.get(username)!=null)return contas.get(username).getPontos();
+        else return -200;
     }
     public void logout(String username){
         contas.get(username).logoutConta();

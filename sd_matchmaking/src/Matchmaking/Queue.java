@@ -15,9 +15,9 @@ public class Queue {
     o servidor é avisado, e os usernames são removidos de todas as outras queues em que possam estar.
      */
 
-    int queueRank; //rank mínimo da queue
+    private int queueRank; //rank mínimo da queue
     private ArrayList<Conta> listaJogadores; //usernames
-    ReentrantLock lock;
+    private ReentrantLock lock;
     /*
     ######################################################
     Construtores

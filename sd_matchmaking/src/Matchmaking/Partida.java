@@ -23,29 +23,32 @@ public class Partida implements Runnable{
     mas atualmente só temos uma.
     */
     private ArrayList<Conta> equipa1, equipa2;
-    private ArrayList<String> usernames1, usernames2;
-    private String[] championsEquipa1, championsEquipa2;
+    private ArrayList<Integer> championsEquipa1, championsEquipa2;
+    private int [] escolheu;
+    /*
+    o "championsEquipa" é útil enquanto estão a ser escolhidos porque não precisa de travessias,
+    é onde as threads dos clientes fazem as picks de champions
+    o "escolheu" é para poder identificar facilmente quem é que não escolheu, e retirar-lhes pontos
+     */
     private Timer timer;
     private TimerTask ação;
     private ArrayBlockingQueue mensagens;
     private int idpartida;
 
     public Partida(ArrayList<Conta>e1, ArrayList<Conta>e2, int id){
-        this.championsEquipa1 = new String[30];
-        this.championsEquipa2 = new String[30];
+        this.championsEquipa1 = new ArrayList<>(5);
+        this.championsEquipa2 = new ArrayList<>(5);
         this.equipa1 = e1;
         this.equipa2 = e2;
         this.idpartida = id;
+        this.escolheu = new int [10];
         this.lock1 = new ReentrantLock();
         this.lock2 = new ReentrantLock();
-        //estes usernames são para facilitar a procura quando for para registar escolhas de champions
         for (int i=0; i<5; i++) {
-            usernames1.add(i,equipa1.get(i).getUsername());
-            equipa1.get(i).setNumeroJogador(i);
-        }
-        for (int i=0; i<5; i++) {
-            usernames2.add(i,equipa2.get(i).getUsername());
-            equipa2.get(i).setNumeroJogador(5+i);
+            championsEquipa1.set(i,-1);
+            championsEquipa2.set(i,-1);
+            escolheu[i]=-1;
+            escolheu[i+5]=-1;
         }
         /*
         redireciona as mensagens dos clientes para a Partida (escolhas de champions)
@@ -53,12 +56,6 @@ public class Partida implements Runnable{
         pedir que escolha outro caso já alguém tenha pedido o que quer
          */
         this.mensagens = new ArrayBlockingQueue(30);
-        for (Conta c: equipa1) {
-            c.setFromCliente(mensagens);
-        }
-        for (Conta c: equipa2) {
-            c.setFromCliente(mensagens);
-        }
         this.timer = new Timer();
         timer.cancel();
         //define o que fazer quando tocar o timer
@@ -68,51 +65,64 @@ public class Partida implements Runnable{
                 /*
                 verifica se todos escolheram com sucesso.
                 seria possível ver quem é que não escolheu e dar uma penalização a esse jogador
+                são processadas as duas equipas em paralelo (estilo loop unrolling)
                  */
-                int champions=0;
-                for(int i=0;i<5;i++){
-                    if(!championsEquipa1[i].equals(null))champions++;
-                    if(!championsEquipa2[i].equals(null))champions++;
-                }
-
-                //Se todos tiverem escolhido normalmente, é gerado um resultado
-                if (champions == 10){
-                    for (int i=0;i<5;i++) {
-                        equipa1.get(i).setIdPartida(idpartida);
-                        equipa2.get(i).setIdPartida(idpartida);
+                boolean todosEscolheram = true;
+                for(int i=0; i<5;i++){
+                    if(!(escolheu[i]>=0)) {
+                        equipa1.get(i).registaResultados(-20);
+                        equipa1.get(i).writeToCliente("timeout");
+                        todosEscolheram = false;
                     }
+                    if(!(escolheu[i+5]>=0)) {
+                        equipa2.get(i).registaResultados(-20);
+                        equipa2.get(i).writeToCliente("timeout");
+                        todosEscolheram = false;
+                    }
+                }
+                //Se todos tiverem escolhido normalmente, confirma a partida, informa os jogadores com os nomes e picks
+                if (todosEscolheram){
+                    ArrayList<String>usernames = new ArrayList<>();
+                    ArrayList<Integer>escolhasGerais = new ArrayList<>();
+                    for(int i=0;i<5;i++) {
+                        usernames.set(i,equipa1.get(i).getUsername());
+                        usernames.set(i+5,equipa2.get(i).getUsername());
+                        escolhasGerais.set(i,championsEquipa1.get(i));
+                        escolhasGerais.set(i+5,championsEquipa2.get(i));
+                    }
+                    for(int i=0;i<5;i++) {
+                        //10 escolhas e 10 usernames são colocados para leitura nas contas.
+                        //as threads são avisadas para atualizar porque o jogo vai começar
+                        equipa1.get(i).setEscolhasGerais(escolhasGerais);
+                        equipa1.get(i).setUsernames(usernames);
+                        equipa1.get(i).writeToCliente("start");
+                        equipa2.get(i).setEscolhasGerais(escolhasGerais);
+                        equipa2.get(i).setUsernames(usernames);
+                        equipa2.get(i).writeToCliente("start");
+                    }
+
+                    try {
+                        wait(200);//apenas para que o cliente receba e veja as equipas antes de "começar" o jogo
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    //é gerado um resultado
                     int resultado = 0;
                     while(resultado == 0) resultado = ThreadLocalRandom.current().nextInt(-20, 20 + 1); //até 5 não inclusive
                     /*
                     negativo- Equipa 1 ganha
-                    positivo- Equipa 2 ganha por pouco
+                    positivo- Equipa 2 ganha
                     O resultado nulo representaria um empate que não é permitido nas regras
                     */
-                    if(resultado<0) {
-                        //resultado negativo, equipa 1 ganha,
-                        for (Conta c : equipa1) {
-                            //adiciona pontos aos vencedores e retira da partida, já pode entrar na queue novamente
-                            c.registaResultados(-resultado);
-                            c.writeToCliente("ganhou");
-                        }
-                        for (Conta c : equipa2) {
-                            //remove pontos aos derrotados e retira da partida, já pode entrar na queue novamente
-                            c.registaResultados(resultado);
-                            c.writeToCliente("perdeu");
-                        }
+                    for (Conta c : equipa1) {
+                        //adiciona pontos aos vencedores e retira da partida, já pode entrar na queue novamente
+                        c.registaResultados(-resultado);
+                        c.writeToCliente("ganhou");
                     }
-                    else {
-                        //se o resultado for ppositivo, equipa 2 ganha,
-                        for (Conta c : equipa1) {
-                            //remove pontos aos derrotados e retira da partida, já pode entrar na queue novamente
-                            c.registaResultados(-resultado);
-                            c.writeToCliente("perdeu");
-                        }
-                        for (Conta c : equipa2) {
-                            //adiciona pontos aos vencedores e retira da partida, já pode entrar na queue novamente
-                            c.registaResultados(resultado);
-                            c.writeToCliente("ganhou");
-                        }
+                    for (Conta c : equipa2) {
+                        //remove pontos aos derrotados e retira da partida, já pode entrar na queue novamente
+                        c.registaResultados(resultado);
+                        c.writeToCliente("perdeu");
                     }
                 }
             }
@@ -122,14 +132,40 @@ public class Partida implements Runnable{
 
     @Override
     public void run() {
+
+        //preparar todos os jogadores e suas contas
+        for (int i=0; i<5;i++) {
+            Conta c1 = equipa1.get(i);
+            Conta c2 = equipa2.get(i);
+            c1.prepararJogo(0,i,idpartida, mensagens,championsEquipa1);
+            c2.prepararJogo(1,i,idpartida, mensagens,championsEquipa2);
+            c1.writeToCliente("escolherAgora");
+            c2.writeToCliente("escolherAgora");
+
+        }
         //começar o relógio
         this.timer.schedule(ação, 30000);
-        //alertar todos os jogadores
-        for (int i=0; i<5;i++) {
-            equipa1.get(i).writeToCliente("escolher");
-            equipa2.get(i).writeFromCliente("escolher");
+        String mensagem;
+        while(true){
+            mensagem = (String) mensagens.poll();
+            //trata dos broadcasts dos updates, atualiza a equipa que teve alterações
+            if(mensagem.equals("updateEquipa1")){
+                for (Conta c:equipa1) {
+                    c.writeToCliente("updateEquipa");
+                }
+            }
+            if(mensagem.equals("updateEquipa2")){
+                for (Conta c:equipa2) {
+                    c.writeToCliente("updateEquipa");
+                }
+            }
+
+
         }
-        while (true){
+        //ESTAVA AQUI V
+    }
+/*
+* while (true){
             String username = (String)mensagens.poll();
             int numerojogador = Integer.parseInt((String)mensagens.poll());
             int champion = Integer.parseInt((String)mensagens.poll());
@@ -141,28 +177,39 @@ public class Partida implements Runnable{
                 if(championsEquipa1[champion].equals(null)) {
                     championsEquipa1[champion]=username;
                     equipa1.get(numerojogador).writeToCliente("escolhido");
-                }
-                //caso já tenha sido escolhido pede para escolher outro
-                else {equipa1.get(numerojogador).writeToCliente("outro");}
-                lock1.unlock();
-            }
-            //se estiver na segunda equipa
-            else {
-                lock2.lock();
-                //tenta regista o champion
-                if(championsEquipa2[champion].equals(null)) {
-                    championsEquipa2[champion] = username;
-                    equipa1.get(numerojogador).writeToCliente("escolhido");
-                }
-                //caso já tenha sido escolhido pede para escolher outro
-                else equipa2.get(numerojogador).writeToCliente("outro");
-                lock2.unlock();
-            }
-        //volta a atender mais um pedido enquanto não tocar o alarme
-        }
+                    //###############################
+                    /*
+                    atualizar os clientes com nensagens nas queues
+                    Provavelmente terão que ser threads dedicadas a ler de buffers em clientes e interpretar
+                    em switch, uma de cada lado
+                    *
+    //###############################
 
-    }
 
+}
+//caso já tenha sido escolhido pede para escolher outro
+                else {
+                        equipa1.get(numerojogador).writeToCliente("outro");
+                        lock1.unlock();
+                        }
+                        }
+                        //se estiver na segunda equipa
+                        else {
+                        lock2.lock();
+                        //tenta regista o champion
+                        if(championsEquipa2[champion].equals(null)) {
+                        championsEquipa2[champion] = username;
+                        equipa1.get(numerojogador).writeToCliente("escolhido");
+                        }
+                        //caso já tenha sido escolhido pede para escolher outro
+                        else {
+                        equipa2.get(numerojogador).writeToCliente("outro");
+                        lock2.unlock();
+                        }
+
+                        }
+                        //volta a atender mais um pedido enquanto não tocar o alarme
+                        }*/
 
     /*
     public static int simula(){
