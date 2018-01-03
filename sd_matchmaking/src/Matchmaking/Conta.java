@@ -98,16 +98,30 @@ public class Conta {
         lock.unlock();
     }
 
+    public synchronized void prepararJogo(int numeroEquipa, int numeroJogador, int idPartida, ArrayBlockingQueue fromCliente, ArrayList<Integer>equipa){
+        this.numeroJogador = numeroJogador;
+        this.numeroEquipa =numeroEquipa;
+        this.idPartida = idPartida;
+        this.escolhas = equipa;
+        /*
+        Este arraylist tem, em cada índice i=[0,4] o champion escolhido pelo jogador i.
+        As escolhas de champions serão feitas concorrentemente pelas threadsServintes de cada cliente
+         */
+        this.fromCliente = fromCliente;
+        /*
+        Este set serve para que todos os pedidos de escolha dos clientes sejam colocados por ordem numa só queue
+        Assim o Partida vai ler o primeiro pedido, e não tem que andar a fazer scan nos diversos clientes individualmente
+        Cliente --->>> (mensagem via socket) --->>> ThreadServinte --->>> (mensagem escrita em fromCliente) --->>> Partida
+         */
+    }
     /*
     ######################################################
     Escritores e leitores das mensagens
     */
-    public String readFromCliente() {
-        return (String) fromCliente.poll();
-    }
 
-    public String readToCliente() {
-        return (String) toCliente.poll();
+
+    public String readToCliente() throws InterruptedException {
+        return (String) toCliente.take();
     }
 
     public void writeToCliente(String mensagem) {
@@ -118,13 +132,7 @@ public class Conta {
         }
     }
 
-    public void writeFromCliente(String mensagem) {
-        try {
-            fromCliente.put(mensagem);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
+
 
     /*
     ######################################################
@@ -138,6 +146,7 @@ public class Conta {
     public void setRank(int rank) {
         this.rank = rank;
     }
+
     public int getIdPartida() {
         return idPartida;
     }
@@ -156,10 +165,6 @@ public class Conta {
         res = this.pontos;
         lock.unlock();
         return res;
-    }
-
-    public int getNumeroJogador() {
-        return numeroJogador;
     }
 
     public String getUsername() {
@@ -183,23 +188,6 @@ public class Conta {
         if(flag) escolhas.set(numeroJogador,numeroChampion);
         lock.unlock();
         return flag;
-    }
-
-    public void prepararJogo(int numeroEquipa, int numeroJogador, int idPartida, ArrayBlockingQueue fromCliente, ArrayList<Integer>equipa){
-        this.numeroJogador = numeroJogador;
-        this.numeroEquipa =numeroEquipa;
-        this.idPartida = idPartida;
-        this.escolhas = equipa;
-        /*
-        Este arraylist tem, em cada índice i=[0,4] o champion escolhido pelo jogador i.
-        As escolhas de champions serão feitas concorrentemente pelas threadsServintes de cada cliente
-         */
-        this.fromCliente = fromCliente;
-        /*
-        Este set serve para que todos os pedidos de escolha dos clientes sejam colocados por ordem numa só queue
-        Assim o Partida vai ler o primeiro pedido, e não tem que andar a fazer scan nos diversos clientes individualmente
-        Cliente --->>> (mensagem via socket) --->>> ThreadServinte --->>> (mensagem escrita em fromCliente) --->>> Partida
-         */
     }
 
     public ArrayList<Integer> getEscolhas(){
@@ -249,7 +237,13 @@ public class Conta {
             return (this.username.equals(c.getUsername()));
         }
     }
-
+    public void writeFromCliente(String mensagem) {
+        try {
+            fromCliente.put(mensagem);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
     public String getPassword() {
         return password;
     }
@@ -259,6 +253,11 @@ public class Conta {
     public String getIdPartida() {
         return idPartida;
     }
-
+public int getNumeroJogador() {
+        return numeroJogador;
+    }
+    public String readFromCliente() {
+        return (String) fromCliente.poll();
+    }
     */
 

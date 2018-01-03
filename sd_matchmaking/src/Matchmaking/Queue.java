@@ -15,21 +15,19 @@ public class Queue {
     o servidor é avisado, e os usernames são removidos de todas as outras queues em que possam estar.
      */
 
-    private int queueRank; //rank mínimo da queue
     private ArrayList<Conta> listaJogadores; //usernames
     private ReentrantLock lock;
     /*
     ######################################################
     Construtores
      */
-    public Queue(int queueRank) {
-        this.queueRank = queueRank;
+    public Queue() {
         this.lock = new ReentrantLock();
         this.listaJogadores = new ArrayList<Conta>();
     }
 
     public int removerJogador(Conta c) {
-        int tamanhoQueue = -1;
+        int tamanhoQueue;
         lock.lock();
         listaJogadores.remove(c);
         tamanhoQueue = listaJogadores.size();
@@ -38,21 +36,10 @@ public class Queue {
     }
 
     public synchronized void jogar(Conta conta){
-        int tamanhoQueue = -1;
         String username = conta.getUsername();
-        int rankJogador = conta.getRank();
-        if((tamanhoQueue = listaJogadores.size())<10 && !listaJogadores.contains(username)) {
+        if((listaJogadores.size())<10 && !listaJogadores.contains(username)) {
             listaJogadores.add(conta);
-            tamanhoQueue++;
         }
-    }
-
-    public int getRank(){
-        int res =-1;
-        lock.lock();
-        res = queueRank;
-        lock.unlock();
-        return res;
     }
 
     //########################################

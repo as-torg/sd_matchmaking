@@ -17,7 +17,7 @@ public class GestorQueues implements Runnable {
         this.banco = b;
         this.queues = new ArrayList<>();
         for(int i = 0; i < 10; i++){
-            queues.add(i, new Queue(i));
+            queues.add(i, new Queue());
         }
         contadorPartidas = 0;
     }

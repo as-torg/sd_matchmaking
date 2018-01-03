@@ -23,8 +23,13 @@ public class ParserServinte implements Runnable {
     }
     @Override
     public void run() {
+        String mensagem = null;
         while(conta.isSessao()){
-            String mensagem = conta.readToCliente();
+            try {
+                mensagem = conta.readToCliente();//fica boqueado até chegar uma mensagem
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             switch (mensagem){
                 case "timeout":
                     try {

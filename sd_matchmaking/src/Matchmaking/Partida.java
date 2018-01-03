@@ -17,7 +17,6 @@ public class Partida implements Runnable{
     Invoca geradores aleatórios para determinar que equipa ganha e quão grande foi a diferença de performance
     (maior diferença significa que os vencedores sobem mais, e os edrrotados descem mais)
      */
-    private ReentrantLock lock1, lock2;
     /*
     estão dois locks, sendo um pra cada equipa. No entanto tal só seria usado caso houvessem duas threads aqui a mexer
     mas atualmente só temos uma.
@@ -42,8 +41,6 @@ public class Partida implements Runnable{
         this.equipa2 = e2;
         this.idpartida = id;
         this.escolheu = new int [10];
-        this.lock1 = new ReentrantLock();
-        this.lock2 = new ReentrantLock();
         for (int i=0; i<5; i++) {
             championsEquipa1.set(i,-1);
             championsEquipa2.set(i,-1);
@@ -68,13 +65,23 @@ public class Partida implements Runnable{
                 são processadas as duas equipas em paralelo (estilo loop unrolling)
                  */
                 boolean todosEscolheram = true;
+                //fecha as escolhas com uma cópia do que foi escolhido. Qualquer escolha após este momento será perdia
+                ArrayList<Integer>escolhasGerais = new ArrayList<>(10);
+                for (int i=0;i<5;i++){
+                    escolhasGerais.set(i,championsEquipa1.get(i));
+                    escolhasGerais.set(i+5,championsEquipa2.get(i));
+                }
+                /*
+                qualquer valor -1 indica que o jogador com esse índice não escolheu
+                se alguém não escolher, é penalizado e não é simulado o jogo
+                 */
                 for(int i=0; i<5;i++){
-                    if(!(escolheu[i]>=0)) {
+                    if(!(escolhasGerais.get(i)>=0)) {
                         equipa1.get(i).registaResultados(-20);
                         equipa1.get(i).writeToCliente("timeout");
                         todosEscolheram = false;
                     }
-                    if(!(escolheu[i+5]>=0)) {
+                    if(!(escolhasGerais.get(i)>=0)) {
                         equipa2.get(i).registaResultados(-20);
                         equipa2.get(i).writeToCliente("timeout");
                         todosEscolheram = false;
@@ -82,13 +89,10 @@ public class Partida implements Runnable{
                 }
                 //Se todos tiverem escolhido normalmente, confirma a partida, informa os jogadores com os nomes e picks
                 if (todosEscolheram){
-                    ArrayList<String>usernames = new ArrayList<>();
-                    ArrayList<Integer>escolhasGerais = new ArrayList<>();
+                    ArrayList<String>usernames = new ArrayList<>(10);
                     for(int i=0;i<5;i++) {
                         usernames.set(i,equipa1.get(i).getUsername());
                         usernames.set(i+5,equipa2.get(i).getUsername());
-                        escolhasGerais.set(i,championsEquipa1.get(i));
-                        escolhasGerais.set(i+5,championsEquipa2.get(i));
                     }
                     for(int i=0;i<5;i++) {
                         //10 escolhas e 10 usernames são colocados para leitura nas contas.
@@ -102,7 +106,7 @@ public class Partida implements Runnable{
                     }
 
                     try {
-                        wait(200);//apenas para que o cliente receba e veja as equipas antes de "começar" o jogo
+                        wait(2000);//apenas para que o cliente receba e veja as equipas antes de "começar" o jogo
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }

@@ -19,7 +19,6 @@ Na prática, o LinkCliente serve para ler do teclado, e o ParserCliente serve pa
 
 public class ParserCliente implements Runnable {
     private BufferedReader in;
-    private Integer [] championsEquipa, championsTotal;
     private Socket socket;
     private boolean sair;
 
@@ -149,6 +148,7 @@ public class ParserCliente implements Runnable {
 
                         break;
                     default:
+                        System.out.println("Mensagem desconhecida: "+mensagem);
                         break;
 
                 }

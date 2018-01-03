@@ -14,7 +14,6 @@ public class BancoContasJogadores {
     ...
      */
     private HashMap<String,Conta> contas;
-    private ReentrantLock lock;
 
     public BancoContasJogadores() {
         this.contas = new HashMap<String,Conta>();
@@ -22,7 +21,7 @@ public class BancoContasJogadores {
     public Conta getConta(String username){
         return contas.get(username);
     }
-    public Conta criarConta(String username, String password){
+    public synchronized Conta criarConta(String username, String password){
         Conta c = new Conta (username, password);
         //testa o equals porque podem haver dois usernames diferentes com o mesmo hash (mesmo que improvável)
         if(!contas.get(username).equals(c)){
@@ -30,7 +29,7 @@ public class BancoContasJogadores {
         }
         return null;
     }
-    public Conta login(String username, String password){
+    public synchronized Conta login(String username, String password){
         if(contas.get(username).loginConta(password)) return contas.get(username);
         return null;
     }
@@ -42,7 +41,11 @@ public class BancoContasJogadores {
         if(contas.get(username)!=null)return contas.get(username).getPontos();
         else return -200;
     }
-    public void logout(String username){
+
+}
+
+/*
+public void logout(String username){
         contas.get(username).logoutConta();
     }
-}
+ */

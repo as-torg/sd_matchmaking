@@ -16,7 +16,7 @@ public class Servidor {
      */
     public static void main(String[]args) throws IOException {
         BancoContasJogadores banco = new BancoContasJogadores();
-        ArrayBlockingQueue mensagens = new ArrayBlockingQueue(20);//capacidade do buffer de pedidos
+        ArrayBlockingQueue mensagens = new ArrayBlockingQueue(30);//capacidade do buffer de pedidos
         GestorQueues queues = new GestorQueues(banco, mensagens);
         Thread gestor = new Thread(queues);
         gestor.start();

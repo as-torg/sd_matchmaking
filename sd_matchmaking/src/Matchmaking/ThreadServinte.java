@@ -157,10 +157,16 @@ public class ThreadServinte implements Runnable {
         Login feito com sucesso
         ######################################################
          */
-
+        ParserServinte parserServinte = new ParserServinte(contaJogador, out);
+        Thread t = new Thread(parserServinte);
+        t.start();
         //processar um comando
-        while (linhainput != null) {
-            if((arg1 = contaJogador.readToCliente())!=null) linhainput = arg1;
+        while (linhainput != null && contaJogador.isSessao()) {
+            try {
+                if((arg1 = contaJogador.readToCliente())!=null) linhainput = arg1;
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             switch (linhainput) {
                 case "logout":
                     contaJogador.logoutConta();
