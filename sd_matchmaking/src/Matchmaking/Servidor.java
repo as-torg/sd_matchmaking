@@ -19,7 +19,7 @@ public class Servidor {
         ArrayBlockingQueue mensagens = new ArrayBlockingQueue(20);//capacidade do buffer de pedidos
         GestorQueues queues = new GestorQueues(banco, mensagens);
         Thread gestor = new Thread(queues);
-        gestor.run();
+        gestor.start();
         System.out.println("Queues abertas\n");
         ServerSocket serverSocket = new ServerSocket(12345);
         System.out.println("A receber pedidos\n");

@@ -34,7 +34,7 @@ public class LinkCliente {
 
         ParserCliente parser = new ParserCliente(in, socket, sair);
         Thread t = new Thread(parser);
-        t.run();
+        t.start();
         String comandoTotal;
 
         /*
